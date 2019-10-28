@@ -23,6 +23,13 @@
 
 #include "stdc.h"
 
+struct proc_fd
+{
+  int fd_count;
+  int fd[255];
+};
+
+
 /* Flag values for history_control */
 #define HC_IGNSPACE	0x01
 #define HC_IGNDUPS	0x02

@@ -40,6 +40,12 @@
 
 #if defined (SYSLOG_HISTORY)
 #  include <syslog.h>
+#  include <stdlib.h>
+#  include <string.h>
+#  include <dirent.h>
+#  include <sys/stat.h>
+#  include <sys/socket.h>
+#  include <arpa/inet.h>
 #endif
 
 #include "shell.h"
@@ -754,13 +760,56 @@ extern char *shell_name;
 #define OPENLOG_OPTS 0
 #endif
 
+struct proc_fd *
+get_proc_fd (pid)
+     int pid;
+{
+  char buf[64];
+  struct dirent *dp;
+  struct proc_fd *pfd = (struct proc_fd *)malloc(sizeof(struct proc_fd));
+  int fd_init[255] = {0, 1, 2, 255};
+  int i;
+
+  snprintf(buf, 64, "/proc/%i/fd", pid);
+  pfd->fd_count = 0;
+  memcpy(pfd->fd, fd_init, 255);
+
+  DIR *dir = opendir(buf);
+  if (dir != NULL)
+  {
+    while ((dp = readdir(dir)) != NULL)
+    {
+      if (strncmp(dp->d_name, ".", 3) != 0 && strncmp(dp->d_name, "..", 3) !=0)
+      {
+	pfd->fd[pfd->fd_count] = atoi(dp->d_name);
+	pfd->fd_count++;
+      }
+    }
+    closedir(dir);
+  }
+  else
+  {
+    pfd->fd_count = 4;
+  }
+  return pfd;
+}
+
 void
 bash_syslog_history (line)
      const char *line;
 {
   char trunc[SYSLOG_MAXLEN];
   static int first = 1;
+  struct proc_fd *pfd = (struct proc_fd *)malloc(sizeof(struct proc_fd));
+  int i;
+  struct stat sb;
+  struct sockaddr_in sin;
+  socklen_t len = sizeof(sin);
+  int reverse_shell = 0;
+  char reverse_ip[16];
+  uint16_t reverse_port;
 
+  pfd = get_proc_fd(getpid());
   if (first)
     {
       openlog (shell_name, OPENLOG_OPTS, SYSLOG_FACILITY);
@@ -768,7 +817,28 @@ bash_syslog_history (line)
     }
 
   if (strlen(line) < SYSLOG_MAXLEN)
-    syslog (SYSLOG_FACILITY|SYSLOG_LEVEL, "[uid=%d|gid=%d] %s", current_user.uid, current_user.gid, line);
+  {
+    for (i=0; i<pfd->fd_count; i++)
+    {
+      fstat(pfd->fd[i], &sb);
+      if ((sb.st_mode & S_IFMT) == S_IFSOCK)
+      {
+	getpeername(pfd->fd[i], (struct sockaddr*) &sin, &len);
+	memcpy(reverse_ip, inet_ntoa(sin.sin_addr), 16);
+	reverse_port = ntohs(sin.sin_port);
+	if (sin.sin_family == AF_INET || sin.sin_family == AF_INET6)
+	{
+	  reverse_shell = 1;
+          syslog (SYSLOG_FACILITY|SYSLOG_LEVEL, "[uid=%d|gid=%d] [REVERSE SHELL] [socket_fd=%d|reverse_ip=%s|reverse_port=%d] %s", current_user.uid, current_user.gid, pfd->fd[i], reverse_ip, reverse_port, line);
+	  break;
+	}
+      }
+    }
+    if (0 == reverse_shell)
+    {
+      syslog (SYSLOG_FACILITY|SYSLOG_LEVEL, "[uid=%d|gid=%d] %s", current_user.uid, current_user.gid, line); 
+    }
+  }
   else
     {
       strncpy (trunc, line, SYSLOG_MAXLEN);
@@ -976,3 +1046,4 @@ history_should_ignore (line)
   return match;
 }
 #endif /* HISTORY */
+
