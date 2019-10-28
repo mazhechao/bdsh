@@ -781,6 +781,14 @@ main (argc, argv, env)
 	 .bash_profile and .bashrc are interpreted. */
       get_tty_state ();
     }
+  else
+    {
+#if defined (HISTORY)
+      bash_initialize_history ();
+      if (shell_initialized == 0 && history_lines_this_session == 0)
+	load_history ();
+    }
+#endif
 
 #if !defined (ONESHOT)
  read_and_execute:
@@ -1729,7 +1737,8 @@ static void
 init_noninteractive ()
 {
 #if defined (HISTORY)
-  bash_history_reinit (0);
+  //bash_history_reinit (0);
+  remember_on_history = enable_history_list = 1;
 #endif /* HISTORY */
   interactive_shell = startup_state = interactive = 0;
   expand_aliases = posixly_correct;	/* XXX - was 0 not posixly_correct */
