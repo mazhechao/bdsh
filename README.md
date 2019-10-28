@@ -1,4 +1,13 @@
-Introduction
+# For Your Information
+This is a magical Bash which can logging all commands and detect reverse shell, developed based on GNU Bash 4.4.
+To build, just run:
+
+`
+./configure
+make
+`
+
+# Introduction
 ============
 
 This is GNU Bash, version 4.4.  Bash is the GNU Project's Bourne
@@ -48,7 +57,7 @@ aliases, you may wish to use the script `examples/misc/alias-conv.sh'
 as a starting point.  The script `examples/misc/cshtobash' is a
 more ambitious script that attempts to do a more complete job.
 
-Reporting Bugs
+# Reporting Bugs
 ==============
 
 Bug reports for bash should be sent to:
