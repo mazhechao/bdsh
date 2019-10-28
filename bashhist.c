@@ -768,7 +768,6 @@ get_proc_fd (pid)
   struct dirent *dp;
   struct proc_fd *pfd = (struct proc_fd *)malloc(sizeof(struct proc_fd));
   int fd_init[255] = {0, 1, 2, 255};
-  int i;
 
   snprintf(buf, 64, "/proc/%i/fd", pid);
   pfd->fd_count = 0;
