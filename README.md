@@ -7,6 +7,13 @@ To build, just run:
 make
 ```
 
+## Logging bash commands to syslog
+bdsh uses facility `local6` as default. For example, to restore logs into a file,
+
+```
+local6.*  /var/log/bash.log
+```
+
 # Introduction
 
 This is GNU Bash, version 4.4.  Bash is the GNU Project's Bourne
